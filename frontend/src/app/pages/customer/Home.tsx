@@ -1,4 +1,6 @@
 import { useState } from "react";
+import TopUpDialog from "../../components/TopUpDialog";
+import WithdrawDialog from "../../components/WithdrawDialog";
 import { Link, useNavigate } from "react-router";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -29,6 +31,8 @@ export default function CustomerHome() {
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   function openReview(id: string, name: string, type: string) {
     setReviewTarget({ id, name, type });
@@ -145,9 +149,14 @@ export default function CustomerHome() {
               </div>
               <Wallet className="w-10 h-10 text-black/20" strokeWidth={1.5} />
             </div>
-            <Button variant="outline" size="sm" className="w-full rounded-full border-black/10 hover:bg-black/5 transition-all duration-300">
-              Top Up
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setTopUpOpen(true)} variant="outline" size="sm" className="flex-1 rounded-full border-black/10 hover:bg-black/5 transition-all duration-300">
+                Top Up
+              </Button>
+              <Button onClick={() => setWithdrawOpen(true)} variant="outline" size="sm" className="flex-1 rounded-full border-black/10 hover:bg-black/5 transition-all duration-300">
+                Withdraw
+              </Button>
+            </div>
           </Card>
         </motion.div>
 
@@ -386,6 +395,9 @@ export default function CustomerHome() {
           )}
         </DialogContent>
       </Dialog>
+
+      <TopUpDialog open={topUpOpen} onClose={() => setTopUpOpen(false)} />
+      <WithdrawDialog open={withdrawOpen} onClose={() => setWithdrawOpen(false)} />
     </div>
   );
 }

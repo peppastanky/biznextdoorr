@@ -2,14 +2,16 @@ import { useState } from "react";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { Wallet, Star, Pencil, CheckCircle } from "lucide-react";
+import { Wallet, Star, Pencil } from "lucide-react";
 import { useUser } from "../../context/UserContext";
 import { useReviews } from "../../context/ReviewContext";
 import { useNavigate } from "react-router";
 import { mockProducts, mockServices } from "../../data/mockData";
+import TopUpDialog from "../../components/TopUpDialog";
+import WithdrawDialog from "../../components/WithdrawDialog";
 
 export default function Profile() {
-  const { user } = useUser();
+  const { user, updateWallet } = useUser();
   const navigate = useNavigate();
   const { reviews, addReview } = useReviews();
 
@@ -19,11 +21,15 @@ export default function Profile() {
   const [reviewText, setReviewText] = useState("");
   const [reviewSuccess, setReviewSuccess] = useState(false);
 
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+
   const purchaseHistory = [
     { ...mockProducts[0], date: "2026-03-15", type: "product" },
     { ...mockServices[0], date: "2026-03-10", type: "service" },
     { ...mockProducts[1], date: "2026-03-05", type: "product" },
   ];
+
 
   function openReview(id: string, name: string, type: string) {
     setReviewTarget({ id, name, type });
@@ -88,11 +94,14 @@ export default function Profile() {
             <p className="text-black/60 pb-1">Available Balance</p>
           </div>
           <div className="flex gap-3">
-            <Button>Top Up</Button>
-            <Button variant="outline">Withdraw</Button>
+            <Button onClick={() => setTopUpOpen(true)}>Top Up</Button>
+            <Button variant="outline" onClick={() => setWithdrawOpen(true)}>Withdraw</Button>
           </div>
         </Card>
       </div>
+
+      <TopUpDialog open={topUpOpen} onClose={() => setTopUpOpen(false)} />
+      <WithdrawDialog open={withdrawOpen} onClose={() => setWithdrawOpen(false)} />
 
       {/* Purchase History - Products */}
       <div className="mb-8">
