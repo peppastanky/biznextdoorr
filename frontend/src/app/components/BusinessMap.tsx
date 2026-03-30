@@ -1,5 +1,5 @@
 import { GoogleMap, useJsApiLoader, OverlayView } from "@react-google-maps/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { Star } from "lucide-react";
 import { mockProducts, mockServices } from "../data/mockData";
@@ -152,20 +152,46 @@ function BusinessPin({
   );
 }
 
-export default function BusinessMap({ businesses, basePath = "/customer/business" }: { businesses: Business[]; basePath?: string }) {
+export default function BusinessMap({
+  businesses,
+  basePath = "/customer/business",
+  userLocation: userLocationProp,
+}: {
+  businesses: Business[];
+  basePath?: string;
+  userLocation?: { lat: number; lng: number } | null;
+}) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(userLocationProp ?? null);
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? "",
   });
 
+  useEffect(() => {
+    // Only request geolocation if parent hasn't provided it
+    if (userLocationProp !== undefined) return;
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {}
+    );
+  }, [userLocationProp]);
+
+  // Sync if parent provides updated location
+  useEffect(() => {
+    if (userLocationProp !== undefined) setUserLocation(userLocationProp ?? null);
+  }, [userLocationProp]);
+
   if (loadError) return <div className="flex items-center justify-center h-full text-black/40">Failed to load map</div>;
   if (!isLoaded) return <div className="flex items-center justify-center h-full text-black/40">Loading map...</div>;
+
+  const mapCenter = userLocation ?? DEFAULT_CENTER;
 
   return (
     <GoogleMap
       mapContainerStyle={MAP_CONTAINER_STYLE}
-      center={DEFAULT_CENTER}
+      center={mapCenter}
       zoom={13}
       options={{
         zoomControl: true,
@@ -178,6 +204,34 @@ export default function BusinessMap({ businesses, basePath = "/customer/business
         ],
       }}
     >
+      {/* User location dot */}
+      {userLocation && (
+        <OverlayView
+          position={userLocation}
+          mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+        >
+          <div style={{ transform: "translate(-50%, -50%)", position: "relative" }}>
+            {/* Pulse ring */}
+            <div style={{
+              position: "absolute",
+              inset: -8,
+              borderRadius: "50%",
+              background: "rgba(59,130,246,0.15)",
+              animation: "pulse 2s ease-in-out infinite",
+            }} />
+            {/* Blue dot */}
+            <div style={{
+              width: 14,
+              height: 14,
+              borderRadius: "50%",
+              background: "#3B82F6",
+              border: "2.5px solid white",
+              boxShadow: "0 2px 6px rgba(59,130,246,0.5)",
+            }} />
+          </div>
+        </OverlayView>
+      )}
+
       {businesses.map((business) => (
         <OverlayView
           key={business.id}

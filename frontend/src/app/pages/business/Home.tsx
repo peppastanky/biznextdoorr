@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/button";
 import { Calendar } from "../../components/ui/calendar";
 import { DollarSign, Users, TrendingUp, Repeat, ArrowRight, Wallet, Store } from "lucide-react";
 import { useUser } from "../../context/UserContext";
+import { getNearbyItems } from "../../lib/geoLocation";
 import { format, isSameDay, parseISO } from "date-fns";
 import { motion } from "motion/react";
 import { mockBusinesses } from "../../data/mockData";
@@ -68,6 +69,19 @@ export default function BusinessHome() {
     { name: "Gel Manicure", sales: 38, revenue: 1520, id: "s1", image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400", type: "service" },
     { name: "Pedicure Service", sales: 32, revenue: 1120, id: "s2", image: "https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=400", type: "service" },
   ];
+
+  // Get only 4 businesses - filtered by location if available, otherwise first 4
+  let displayedBusinesses = mockBusinesses.slice(0, 4);
+
+  if (user?.location) {
+    displayedBusinesses = getNearbyItems(
+      mockBusinesses,
+      user.location.lat,
+      user.location.lng,
+      5,
+      4
+    ).map(({ distance, ...b }) => b);
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-24">
@@ -298,7 +312,7 @@ export default function BusinessHome() {
           </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {mockBusinesses.map((business, i) => (
+          {displayedBusinesses.map((business, i) => (
             <motion.div
               key={business.id}
               initial={{ opacity: 0, y: 20 }}

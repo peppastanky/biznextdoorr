@@ -1,3 +1,8 @@
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.5); opacity: 0; }
+}
+
 :root {
   --text: #6b6375;
   --text-h: #08060d;

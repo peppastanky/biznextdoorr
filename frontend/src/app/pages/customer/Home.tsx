@@ -5,11 +5,12 @@ import { Link, useNavigate } from "react-router";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Calendar as CalendarUI } from "../../components/ui/calendar";
-import { Wallet, Package, Calendar, ArrowRight, Star, CheckCircle, Sparkles } from "lucide-react";
+import { Wallet, Package, Calendar, ArrowRight, Star, CheckCircle, Sparkles, MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { useUser } from "../../context/UserContext";
 import { useReviews } from "../../context/ReviewContext";
 import { mockProducts, mockServices, mockBusinesses } from "../../data/mockData";
+import { getNearbyItems } from "../../lib/geoLocation";
 import { motion } from "motion/react";
 import { format, isSameDay, parseISO } from "date-fns";
 
@@ -62,7 +63,49 @@ export default function CustomerHome() {
     }, 1500);
   }
 
-  const recommended = [...mockProducts.slice(0, 3), ...mockServices.slice(0, 2)];
+  // Get nearby businesses based on user location
+  let recommended: (typeof mockProducts | typeof mockServices)[number][] = [];
+  let nearbyBusinesses: (typeof mockBusinesses)[number][] = mockBusinesses;
+
+  if (user?.location) {
+    // Get nearby products and services
+    const nearbyProducts = getNearbyItems(
+      mockProducts.map((p) => ({
+        ...p,
+        location: mockBusinesses.find((b) => b.id === p.businessId)?.location,
+      })) as any[],
+      user.location.lat,
+      user.location.lng,
+      5,
+      4
+    );
+
+    const nearbyServices = getNearbyItems(
+      mockServices.map((s) => ({
+        ...s,
+        location: mockBusinesses.find((b) => b.id === s.businessId)?.location,
+      })) as any[],
+      user.location.lat,
+      user.location.lng,
+      5,
+      4
+    );
+
+    recommended = [...nearbyProducts, ...nearbyServices].slice(0, 4);
+
+    // Get nearby businesses for the "Businesses Near You" section
+    nearbyBusinesses = getNearbyItems(
+      mockBusinesses,
+      user.location.lat,
+      user.location.lng,
+      5,
+      4
+    ).map(({ distance, ...b }) => b);
+  } else {
+    // Fallback if user location is not available
+    recommended = [...mockProducts.slice(0, 3), ...mockServices.slice(0, 2)];
+    nearbyBusinesses = mockBusinesses.slice(0, 4);
+  }
 
   const dayItems = scheduleItems.filter(item => isSameDay(parseISO(item.date), selectedDate));
 
@@ -293,7 +336,7 @@ export default function CustomerHome() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {mockBusinesses.map((business, i) => (
+          {nearbyBusinesses.map((business, i) => (
             <motion.div
               key={business.id}
               initial={{ opacity: 0, y: 20 }}

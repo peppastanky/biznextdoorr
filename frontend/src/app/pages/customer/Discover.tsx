@@ -2,13 +2,22 @@ import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router";
 import { Card } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
-import { Button } from "../../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
-import { Search, Star, MapPin } from "lucide-react";
+import { Search, Star, MapPin, LocateFixed } from "lucide-react";
 import { mockProducts, mockServices, categories, mockBusinesses } from "../../data/mockData";
 import { motion } from "motion/react";
 import BusinessMap from "../../components/BusinessMap";
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 export default function Discover() {
   const [searchParams] = useSearchParams();
@@ -16,7 +25,9 @@ export default function Discover() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [priceRange, setPriceRange] = useState("all");
-  const [location, setLocation] = useState("all");
+  const [distanceFilter, setDistanceFilter] = useState("all");
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationStatus, setLocationStatus] = useState<"idle" | "loading" | "granted" | "denied">("idle");
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -25,18 +36,43 @@ export default function Discover() {
     if (query) setSearchQuery(query);
   }, [searchParams]);
 
+  useEffect(() => {
+    if (!navigator.geolocation) { setLocationStatus("denied"); return; }
+    setLocationStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocationStatus("granted");
+      },
+      () => setLocationStatus("denied")
+    );
+  }, []);
+
+  const getBusinessDistance = (businessId: string) => {
+    if (!userLocation) return null;
+    const biz = mockBusinesses.find((b) => b.id === businessId);
+    if (!biz) return null;
+    return haversineKm(userLocation.lat, userLocation.lng, biz.location.lat, biz.location.lng);
+  };
+
   const filterItems = (items: any[]) => {
     return items.filter((item) => {
-      const matchesSearch = searchQuery === "" || 
+      const matchesSearch = searchQuery === "" ||
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.category.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
-      const matchesPrice = 
+      const matchesPrice =
         priceRange === "all" ||
         (priceRange === "0-25" && item.price <= 25) ||
         (priceRange === "25-50" && item.price > 25 && item.price <= 50) ||
         (priceRange === "50+" && item.price > 50);
-      return matchesSearch && matchesCategory && matchesPrice;
+      let matchesDistance = true;
+      if (distanceFilter !== "all" && userLocation) {
+        const dist = getBusinessDistance(item.businessId);
+        const maxKm = parseFloat(distanceFilter);
+        matchesDistance = dist !== null && dist <= maxKm;
+      }
+      return matchesSearch && matchesCategory && matchesPrice && matchesDistance;
     });
   };
 
@@ -71,10 +107,29 @@ export default function Discover() {
                 <h1 className="text-2xl font-bold tracking-tighter">Explore Businesses</h1>
                 <p className="text-xs text-black/40 mt-1">Hover over a pin to preview, click to visit the business.</p>
               </div>
-              <MapPin className="w-6 h-6 text-black/20" strokeWidth={1.5} />
+              <div className="flex items-center gap-2">
+                {locationStatus === "granted" && (
+                  <div className="flex items-center gap-1.5 text-xs text-blue-500 font-semibold bg-blue-50 px-3 py-1.5 rounded-full">
+                    <LocateFixed className="w-3.5 h-3.5" />
+                    Location on
+                  </div>
+                )}
+                {locationStatus === "denied" && (
+                  <div className="flex items-center gap-1.5 text-xs text-black/30 font-semibold bg-black/5 px-3 py-1.5 rounded-full">
+                    <MapPin className="w-3.5 h-3.5" />
+                    Location off
+                  </div>
+                )}
+                {locationStatus === "loading" && (
+                  <div className="flex items-center gap-1.5 text-xs text-black/30 font-semibold bg-black/5 px-3 py-1.5 rounded-full animate-pulse">
+                    <LocateFixed className="w-3.5 h-3.5" />
+                    Locating...
+                  </div>
+                )}
+              </div>
             </div>
             <div className="bg-white border border-black/10 rounded-3xl h-[480px] overflow-hidden">
-              <BusinessMap businesses={mockBusinesses} />
+              <BusinessMap businesses={mockBusinesses} userLocation={userLocation} />
             </div>
           </Card>
 
@@ -110,6 +165,18 @@ export default function Discover() {
                 <SelectItem value="0-25" className="rounded-xl">$0 - $25</SelectItem>
                 <SelectItem value="25-50" className="rounded-xl">$25 - $50</SelectItem>
                 <SelectItem value="50+" className="rounded-xl">$50+</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={distanceFilter} onValueChange={setDistanceFilter} disabled={!userLocation}>
+              <SelectTrigger className="w-48 bg-black/5 border-none rounded-full h-11 disabled:opacity-40">
+                <SelectValue placeholder="Distance" />
+              </SelectTrigger>
+              <SelectContent className="border-black/5 rounded-3xl">
+                <SelectItem value="all" className="rounded-xl">Any Distance</SelectItem>
+                <SelectItem value="1" className="rounded-xl">Within 1 km</SelectItem>
+                <SelectItem value="3" className="rounded-xl">Within 3 km</SelectItem>
+                <SelectItem value="5" className="rounded-xl">Within 5 km</SelectItem>
+                <SelectItem value="10" className="rounded-xl">Within 10 km</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -166,10 +233,29 @@ export default function Discover() {
                 <h3 className="text-2xl font-bold tracking-tighter">Explore on the Map</h3>
                 <p className="text-xs text-black/40 mt-1">Hover over a pin to preview, click to visit the business.</p>
               </div>
-              <MapPin className="w-6 h-6 text-black/20" strokeWidth={1.5} />
+              <div className="flex items-center gap-2">
+                {locationStatus === "granted" && (
+                  <div className="flex items-center gap-1.5 text-xs text-blue-500 font-semibold bg-blue-50 px-3 py-1.5 rounded-full">
+                    <LocateFixed className="w-3.5 h-3.5" />
+                    Location on
+                  </div>
+                )}
+                {locationStatus === "denied" && (
+                  <div className="flex items-center gap-1.5 text-xs text-black/30 font-semibold bg-black/5 px-3 py-1.5 rounded-full">
+                    <MapPin className="w-3.5 h-3.5" />
+                    Location off
+                  </div>
+                )}
+                {locationStatus === "loading" && (
+                  <div className="flex items-center gap-1.5 text-xs text-black/30 font-semibold bg-black/5 px-3 py-1.5 rounded-full animate-pulse">
+                    <LocateFixed className="w-3.5 h-3.5" />
+                    Locating...
+                  </div>
+                )}
+              </div>
             </div>
             <div className="bg-white border border-black/10 rounded-3xl h-[480px] overflow-hidden">
-              <BusinessMap businesses={mockBusinesses} />
+              <BusinessMap businesses={mockBusinesses} userLocation={userLocation} />
             </div>
           </Card>
 
@@ -205,6 +291,18 @@ export default function Discover() {
                 <SelectItem value="0-25" className="rounded-xl">$0 - $25</SelectItem>
                 <SelectItem value="25-50" className="rounded-xl">$25 - $50</SelectItem>
                 <SelectItem value="50+" className="rounded-xl">$50+</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={distanceFilter} onValueChange={setDistanceFilter} disabled={!userLocation}>
+              <SelectTrigger className="w-48 bg-black/5 border-none rounded-full h-11 disabled:opacity-40">
+                <SelectValue placeholder="Distance" />
+              </SelectTrigger>
+              <SelectContent className="border-black/5 rounded-3xl">
+                <SelectItem value="all" className="rounded-xl">Any Distance</SelectItem>
+                <SelectItem value="1" className="rounded-xl">Within 1 km</SelectItem>
+                <SelectItem value="3" className="rounded-xl">Within 3 km</SelectItem>
+                <SelectItem value="5" className="rounded-xl">Within 5 km</SelectItem>
+                <SelectItem value="10" className="rounded-xl">Within 10 km</SelectItem>
               </SelectContent>
             </Select>
           </div>

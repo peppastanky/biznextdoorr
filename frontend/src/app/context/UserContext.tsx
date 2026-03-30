@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { onAuthStateChanged, signOut, User as FirebaseUser } from "firebase/auth";
 import { auth } from "../lib/firebase";
+import { getUserLocation } from "../lib/geoLocation";
 
 interface User {
   id: string;
@@ -10,6 +11,7 @@ interface User {
   businessName?: string;
   wallet?: number;
   bank?: number;
+  location?: { lat: number; lng: number };
 }
 
 interface UserContextType {
@@ -18,6 +20,7 @@ interface UserContextType {
   login: (user: User) => void;
   logout: () => void;
   updateWallet: (amount: number) => void;
+  setLocation: (location: { lat: number; lng: number } | null) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -39,12 +42,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         // Restore any saved type/username from localStorage
         const saved = localStorage.getItem(`userMeta_${firebaseUser.uid}`);
         const meta = saved ? JSON.parse(saved) : {};
-        setUser(firebaseUserToAppUser(firebaseUser, meta));
+        const appUser = firebaseUserToAppUser(firebaseUser, meta);
+        setUser(appUser);
+
+        // Request geolocation for customers
+        if (appUser.type === "customer") {
+          const location = await getUserLocation();
+          if (location) {
+            setUser((prev) =>
+              prev ? { ...prev, location } : null
+            );
+          }
+        }
       } else {
         setUser(null);
       }
@@ -80,8 +94,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const setLocation = (location: { lat: number; lng: number } | null) => {
+    if (user) {
+      setUser({ ...user, location: location || undefined });
+    }
+  };
+
   return (
-    <UserContext.Provider value={{ user, loading, login, logout, updateWallet }}>
+    <UserContext.Provider value={{ user, loading, login, logout, updateWallet, setLocation }}>
       {children}
     </UserContext.Provider>
   );
