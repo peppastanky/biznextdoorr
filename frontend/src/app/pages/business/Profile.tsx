@@ -1,10 +1,8 @@
-import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router";
+import { useState } from "react";
+import { useNavigate } from "react-router";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
-import { Wallet, MapPin, CheckCircle2, Star } from "lucide-react";
+import { Wallet, MapPin, CheckCircle2 } from "lucide-react";
 import { useUser } from "../../context/UserContext";
 import BusinessWithdrawDialog from "../../components/BusinessWithdrawDialog";
 
@@ -18,23 +16,8 @@ const mockReviews = [
 
 export default function BusinessProfilePage() {
   const { user } = useUser();
-  const [searchParams] = useSearchParams();
-  const [reviewsOpen, setReviewsOpen] = useState(false);
+  const navigate = useNavigate();
   const [withdrawOpen, setWithdrawOpen] = useState(false);
-  const [sortBy, setSortBy] = useState("newest");
-
-  // Open reviews dialog if URL contains ?reviews=open
-  useEffect(() => {
-    if (searchParams.get("reviews") === "open") setReviewsOpen(true);
-  }, [searchParams]);
-
-  const sorted = [...mockReviews].sort((a, b) => {
-    if (sortBy === "newest")  return new Date(b.date).getTime() - new Date(a.date).getTime();
-    if (sortBy === "oldest")  return new Date(a.date).getTime() - new Date(b.date).getTime();
-    if (sortBy === "highest") return b.rating - a.rating;
-    if (sortBy === "lowest")  return a.rating - b.rating;
-    return 0;
-  });
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">
@@ -70,7 +53,7 @@ export default function BusinessProfilePage() {
           <div>
             <p className="text-sm text-black/60 mb-1">Total Reviews</p>
             <button
-              onClick={() => setReviewsOpen(true)}
+              onClick={() => navigate("/business/insights#reviews")}
               className="text-2xl font-semibold hover:underline underline-offset-4 transition-all"
             >
               {mockReviews.length}
@@ -134,47 +117,6 @@ export default function BusinessProfilePage() {
           </div>
         </Card>
       </div>
-
-      {/* Reviews Dialog */}
-      <Dialog open={reviewsOpen} onOpenChange={setReviewsOpen}>
-        <DialogContent className="rounded-3xl p-8 max-w-lg max-h-[80vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold tracking-tighter">All Reviews</DialogTitle>
-          </DialogHeader>
-
-          <div className="flex items-center justify-between mt-2 mb-4">
-            <p className="text-sm text-black/40">{mockReviews.length} reviews</p>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-40 bg-black/5 border-none rounded-xl h-9 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-2xl border-black/5">
-                <SelectItem value="newest"  className="rounded-xl">Newest first</SelectItem>
-                <SelectItem value="oldest"  className="rounded-xl">Oldest first</SelectItem>
-                <SelectItem value="highest" className="rounded-xl">Highest rated</SelectItem>
-                <SelectItem value="lowest"  className="rounded-xl">Lowest rated</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="overflow-y-auto flex-1 space-y-4 pr-1">
-            {sorted.map((review) => (
-              <div key={review.id} className="border border-black/5 rounded-2xl p-5">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold">@{review.author}</span>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? "fill-black" : "fill-black/10"}`} />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-sm text-black/70 leading-relaxed">{review.text}</p>
-                <p className="text-[10px] uppercase tracking-widest text-black/30 mt-2">{review.date}</p>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <BusinessWithdrawDialog open={withdrawOpen} onClose={() => setWithdrawOpen(false)} />
     </div>

@@ -7,10 +7,34 @@ import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Calendar } from "../../components/ui/calendar";
-import { Upload, X, Package, Sparkles } from "lucide-react";
+import { Upload, X, Package, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format, isSameDay } from "date-fns";
 import { categories } from "../../data/mockData";
+
+async function fetchPriceRecommendation(name: string, description: string, category: string, type: "product" | "service") {
+  const prompt = `You are a pricing expert for small home-based businesses in Singapore. Given the following ${type}, suggest a fair retail price in SGD.
+
+Name: ${name}
+Category: ${category}
+Description: ${description}
+
+Respond in this exact JSON format with no markdown:
+{"price": <number>, "reasoning": "<one short sentence explaining the price>"}`;
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+    }
+  );
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const cleaned = text.replace(/```json|```/g, "").trim();
+  return JSON.parse(cleaned) as { price: number; reasoning: string };
+}
 
 const TIME_SLOTS = [
   "6:00 AM", "7:00 AM", "8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM",
@@ -33,6 +57,8 @@ export default function CreateListing() {
   });
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [dateSlots, setDateSlots] = useState<Record<string, string[]>>({});
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [priceReasoning, setPriceReasoning] = useState<string | null>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) setImages([...images, ...Array.from(e.target.files)]);
@@ -156,8 +182,40 @@ export default function CreateListing() {
               </div>
             )}
             <div>
-              <Label htmlFor="price" className="text-[10px] uppercase tracking-widest font-bold text-black/40 mb-3 block">Price ($)</Label>
-              <Input id="price" name="price" type="number" min="0" step="0.01" value={formData.price} onChange={handleChange} required className="bg-black/5 border-none rounded-xl p-3 focus:ring-2 focus:ring-black/10 transition-all duration-300" />
+              <Label htmlFor="price" className="text-[10px] uppercase tracking-widest font-bold text-black/40 mb-3 block">
+                {listingType === "product" ? "Price per Unit ($)" : "Price per Session ($)"}
+              </Label>
+              <div className="flex gap-3">
+                <Input id="price" name="price" type="number" min="0" step="0.01" value={formData.price} onChange={(e) => { handleChange(e); setPriceReasoning(null); }} required className="bg-black/5 border-none rounded-xl p-3 focus:ring-2 focus:ring-black/10 transition-all duration-300" />
+                <button
+                  type="button"
+                  disabled={priceLoading || !formData.name}
+                  onClick={async () => {
+                    if (!formData.name) return;
+                    setPriceLoading(true);
+                    setPriceReasoning(null);
+                    try {
+                      const result = await fetchPriceRecommendation(formData.name, formData.description, formData.category, listingType!);
+                      setFormData((prev) => ({ ...prev, price: String(result.price) }));
+                      setPriceReasoning(result.reasoning);
+                    } catch {
+                      setPriceReasoning("Could not generate a recommendation. Try filling in more details.");
+                    } finally {
+                      setPriceLoading(false);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-500 to-blue-500 text-white text-xs font-bold whitespace-nowrap hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                >
+                  {priceLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  {priceLoading ? "Thinking..." : "Suggest with Gemini"}
+                </button>
+              </div>
+              {priceReasoning && (
+                <p className="mt-2 text-xs text-black/40 flex items-start gap-1.5">
+                  <Sparkles className="w-3 h-3 mt-0.5 shrink-0 text-violet-400" />
+                  {priceReasoning}
+                </p>
+              )}
             </div>
           </Card>
 
@@ -176,7 +234,7 @@ export default function CreateListing() {
                   mode="single"
                   selected={selectedDate}
                   onSelect={setSelectedDate}
-                  className="rounded-xl"
+                  className="rounded-xl mx-auto [&>div]:mx-auto"
                   modifiers={{ hasSlots: datesWithSlots }}
                   components={{
                     DayContent: ({ date }) => {

@@ -1,15 +1,31 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useLocation } from "react-router";
 import { Card } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { DollarSign, Users, Eye, TrendingUp, Star, Send, Bot, Loader2 } from "lucide-react";
+import { DollarSign, Users, Eye, TrendingUp, Star, Send, Bot } from "lucide-react";
+import { mockReviewsByBusiness } from "../../data/mockData";
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
+// Use b1 as the mock business owner's reviews
+const BUSINESS_REVIEWS = mockReviewsByBusiness["b1"] ?? [];
+
+function StarRow({ rating }: { rating: number }) {
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <Star key={s} className="w-3.5 h-3.5" fill={rating >= s ? "#000" : "none"} strokeWidth={1.5} />
+      ))}
+    </div>
+  );
+}
+
 export default function Insights() {
+  const location = useLocation();
   const [chatMessages, setChatMessages] = useState([
     {
       role: "assistant",
@@ -18,10 +34,33 @@ export default function Insights() {
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [sortBy, setSortBy] = useState("newest");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (location.hash === "#reviews") {
+      setTimeout(() => {
+        const el = document.getElementById("reviews");
+        if (el) window.scrollTo({ top: el.offsetTop - 90, behavior: "smooth" });
+      }, 100);
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [location]);
+
+  const sortedReviews = useMemo(() => {
+    return [...BUSINESS_REVIEWS].sort((a, b) => {
+      if (sortBy === "highest") return b.rating - a.rating;
+      if (sortBy === "lowest") return a.rating - b.rating;
+      if (sortBy === "oldest") return a.date.localeCompare(b.date);
+      return b.date.localeCompare(a.date);
+    });
+  }, [sortBy]);
+
+  useEffect(() => {
+    if (chatMessages.length > 1) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [chatMessages]);
 
   const revenueData = [
@@ -247,18 +286,28 @@ Be concise, friendly, and actionable. Keep responses under 4 sentences. Focus on
       </Card>
 
       {/* AI Chatbot */}
-      <Card className="p-6 border border-black/5 rounded-3xl shadow-sm">
-        <div className="flex items-center gap-3 mb-6">
-          <Bot className="w-6 h-6" />
-          <h2 className="text-2xl">AI Business Assistant</h2>
-        </div>
+      <div className="rounded-3xl bg-gradient-to-r from-violet-500 via-purple-500 to-blue-500 p-[1.5px] shadow-sm">
+        <div className="rounded-[22px] bg-white overflow-hidden">
 
-        <div className="border border-black/5 rounded-3xl overflow-hidden mb-4">
-          <div className="h-96 overflow-y-auto p-6 space-y-4 bg-black/5">
+          {/* Header */}
+          <div className="px-8 py-5 border-b border-black/5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Bot className="w-5 h-5 text-black/40" strokeWidth={1.5} />
+              <div>
+                <h2 className="text-lg font-bold tracking-tighter text-black">Gemini AI Business Assistant</h2>
+                <p className="text-[10px] uppercase tracking-widest font-semibold bg-gradient-to-r from-violet-500 to-blue-500 bg-clip-text text-transparent">Powered by Gemini</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Chat messages */}
+          <div className="h-96 overflow-y-auto p-6 space-y-4 bg-black/[0.02]">
             {chatMessages.map((message, index) => (
               <div key={index} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed ${
-                  message.role === "user" ? "bg-black text-white" : "bg-white border border-black/5"
+                <div className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                  message.role === "user"
+                    ? "bg-black text-white"
+                    : "bg-white border border-black/5 text-black/70 shadow-sm"
                 }`}>
                   {message.content}
                 </div>
@@ -266,34 +315,91 @@ Be concise, friendly, and actionable. Keep responses under 4 sentences. Focus on
             ))}
             {aiLoading && (
               <div className="flex justify-start">
-                <div className="bg-white border border-black/5 p-4 rounded-2xl flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-black/30" />
-                  <span className="text-sm text-black/40">Thinking...</span>
+                <div className="bg-white border border-black/5 shadow-sm px-4 py-3 rounded-2xl flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: "300ms" }} />
                 </div>
               </div>
             )}
             <div ref={chatEndRef} />
           </div>
 
-          <div className="flex gap-3 p-4 bg-white border-t border-black/5">
+          {/* Input */}
+          <div className="flex gap-3 px-6 py-4 bg-white border-t border-black/5">
             <Input
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-              placeholder="Ask about your business insights..."
+              placeholder="Ask Gemini about your business insights..."
               disabled={aiLoading}
-              className="bg-black/5 border-none rounded-full focus:ring-2 focus:ring-black/10"
+              className="bg-black/5 border-none rounded-full focus:ring-2 focus:ring-black/10 text-sm"
             />
-            <Button onClick={handleSendMessage} disabled={aiLoading} className="rounded-full">
+            <button
+              onClick={handleSendMessage}
+              disabled={aiLoading}
+              className="w-10 h-10 rounded-full bg-gradient-to-r from-violet-500 to-blue-500 flex items-center justify-center text-white hover:opacity-90 transition-opacity disabled:opacity-40 shrink-0"
+            >
               <Send className="w-4 h-4" />
-            </Button>
+            </button>
           </div>
+
+          {/* Footer hint */}
+          <p className="text-[10px] text-black/30 text-center pb-4 tracking-wide">
+            Try: "How's my revenue?", "What should I improve?", "Who are my best customers?"
+          </p>
+
+        </div>
+      </div>
+
+      {/* Reviews */}
+      <div id="reviews" className="mt-12">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest font-bold text-black/40 mb-2">Customer Feedback</p>
+            <div className="flex items-center gap-3">
+              <h2 className="text-3xl font-bold tracking-tighter">
+                {(BUSINESS_REVIEWS.reduce((s, r) => s + r.rating, 0) / BUSINESS_REVIEWS.length).toFixed(1)}
+              </h2>
+              <div>
+                <StarRow rating={Math.round(BUSINESS_REVIEWS.reduce((s, r) => s + r.rating, 0) / BUSINESS_REVIEWS.length)} />
+                <p className="text-xs text-black/40 mt-1">{BUSINESS_REVIEWS.length} reviews</p>
+              </div>
+            </div>
+          </div>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-44 rounded-full bg-black/5 border-none h-10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border-black/5">
+              <SelectItem value="newest">Newest first</SelectItem>
+              <SelectItem value="oldest">Oldest first</SelectItem>
+              <SelectItem value="highest">Highest rated</SelectItem>
+              <SelectItem value="lowest">Lowest rated</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <p className="text-xs text-black/40 text-center">
-          Powered by Gemini · Try: "How's my revenue?", "What should I improve?", "Who are my best customers?"
-        </p>
-      </Card>
+        <div className="grid grid-cols-2 gap-4">
+          {sortedReviews.map((review) => (
+            <Card key={review.id} className="p-5 border border-black/5 rounded-2xl shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-black/10 flex items-center justify-center text-xs font-bold text-black/50">
+                    {review.author[0].toUpperCase()}
+                  </div>
+                  <span className="font-semibold text-sm">@{review.author}</span>
+                </div>
+                <span className="text-xs text-black/30">{review.date}</span>
+              </div>
+              <StarRow rating={review.rating} />
+              {review.text && (
+                <p className="text-sm text-black/60 leading-relaxed mt-3">{review.text}</p>
+              )}
+            </Card>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

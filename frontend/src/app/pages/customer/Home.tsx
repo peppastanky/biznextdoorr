@@ -5,7 +5,7 @@ import { Link, useNavigate } from "react-router";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Calendar as CalendarUI } from "../../components/ui/calendar";
-import { Wallet, Package, Calendar, ArrowRight, Star, CheckCircle } from "lucide-react";
+import { Wallet, Package, Calendar, ArrowRight, Star, CheckCircle, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { useUser } from "../../context/UserContext";
 import { useReviews } from "../../context/ReviewContext";
@@ -19,6 +19,11 @@ const scheduleItems = [
   { date: "2026-03-28", time: "11:30 AM – 12:30 PM", name: mockServices[2].name, business: mockServices[2].businessName, type: "service", id: mockServices[2].id },
   { date: "2026-03-20", time: "9:00 AM – 12:00 PM",  name: mockProducts[0].name, business: mockProducts[0].businessName, type: "collect", id: mockProducts[0].id },
   { date: "2026-03-19", time: "1:00 PM – 5:00 PM",   name: mockProducts[1].name, business: mockProducts[1].businessName, type: "collect", id: mockProducts[1].id },
+  { date: "2026-03-29", time: "10:00 AM – 1:00 PM",  name: mockProducts[2].name, business: mockProducts[2].businessName, type: "collect", id: mockProducts[2].id },
+  { date: "2026-03-30", time: "2:00 PM – 5:00 PM",   name: mockProducts[3].name, business: mockProducts[3].businessName, type: "collect", id: mockProducts[3].id },
+  { date: "2026-03-30", time: "11:00 AM – 12:00 PM", name: mockServices[3].name, business: mockServices[3].businessName, type: "service", id: mockServices[3].id },
+  { date: "2026-03-31", time: "9:00 AM – 11:00 AM",  name: mockProducts[4].name, business: mockProducts[4].businessName, type: "collect", id: mockProducts[4].id },
+  { date: "2026-03-31", time: "3:00 PM – 4:00 PM",   name: mockServices[0].name, business: mockServices[0].businessName, type: "service", id: mockServices[0].id },
 ];
 
 export default function CustomerHome() {
@@ -66,18 +71,25 @@ export default function CustomerHome() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-24">
       {/* Calendar and Timeline */}
-      <div className="mb-12">
-        <p className="text-[10px] uppercase tracking-widest font-bold text-black/40 mb-2">Schedule</p>
-        <h2 className="text-4xl font-bold tracking-tighter leading-tight">Your Calendar</h2>
+      <div className="flex items-end justify-between mb-12">
+        <div>
+          <p className="text-[10px] uppercase tracking-widest font-bold text-black/40 mb-2">Schedule</p>
+          <h2 className="text-4xl font-bold tracking-tighter leading-tight">Your Calendar</h2>
+        </div>
+        <Link to="/customer/my-orders">
+          <Button variant="ghost" className="rounded-full hover:bg-black/5 gap-2 transition-all duration-300 mb-1">
+            See all orders & bookings <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+          </Button>
+        </Link>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
-        <Card className="p-8 border border-black/5 rounded-3xl bg-white shadow-sm">
-          <p className="text-[10px] uppercase tracking-widest font-bold text-black/40 mb-6">Calendar</p>
+        <Card className="p-8 border border-black/5 rounded-3xl bg-white shadow-sm flex flex-col items-center">
+          <p className="text-[10px] uppercase tracking-widest font-bold text-black/40 mb-6 self-start">Calendar</p>
           <CalendarUI
             mode="single"
             selected={selectedDate}
             onSelect={(date) => date && setSelectedDate(date)}
-            className="rounded-xl"
+            className="rounded-xl mx-auto [&>div]:mx-auto"
             modifiers={{ scheduled: scheduledDates }}
             components={{
               DayContent: ({ date, ...props }) => {
@@ -205,6 +217,13 @@ export default function CustomerHome() {
           <div>
             <p className="text-[10px] uppercase tracking-widest font-bold text-black/40 mb-2">Curated</p>
             <h2 className="text-4xl font-bold tracking-tighter leading-tight">Recommended for You</h2>
+            <div className="flex items-center gap-2 mt-3">
+              <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-bold px-2.5 py-1 rounded-full bg-gradient-to-r from-violet-500 to-blue-500 text-white shrink-0">
+                <Sparkles className="w-2.5 h-2.5" />
+                Powered by Gemini
+              </span>
+              <span className="text-xs text-black/40">Based on your recent activity</span>
+            </div>
           </div>
           <Link to="/customer/discover">
             <Button variant="ghost" className="rounded-full hover:bg-black/5 gap-2 transition-all duration-300">

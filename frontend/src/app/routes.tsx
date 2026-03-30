@@ -27,6 +27,8 @@ import BusinessProfilePage from "./pages/business/Profile";
 import BusinessSettings from "./pages/business/Settings";
 import BusinessFAQ from "./pages/business/FAQ";
 import BusinessSafety from "./pages/business/Safety";
+import NearbyBusinesses from "./pages/business/NearbyBusinesses";
+import NearbyBusinessProfile from "./pages/business/NearbyBusinessProfile";
 
 export const router = createBrowserRouter([
   {
@@ -74,6 +76,8 @@ export const router = createBrowserRouter([
       { path: "settings", Component: BusinessSettings },
       { path: "faq", Component: BusinessFAQ },
       { path: "safety", Component: BusinessSafety },
+      { path: "nearby", Component: NearbyBusinesses },
+      { path: "nearby/:id", Component: NearbyBusinessProfile },
     ],
   },
 ]);

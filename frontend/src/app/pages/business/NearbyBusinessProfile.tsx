@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router";
+import { useParams } from "react-router";
 import { useEffect, useState, useMemo } from "react";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -33,9 +33,7 @@ function useGeminiInsights(businessName: string, reviews: { rating: number; text
       .map((r, i) => `Review ${i + 1} (${r.rating}/5): "${r.text}"`)
       .join("\n");
 
-    const prompt = `You are a business analyst. Based solely on the following customer reviews for "${businessName}", write a concise 3-sentence insight summary covering: overall sentiment, what customers love most, and one area for improvement. Be specific and use evidence from the reviews. Do not use bullet points — write in flowing prose.
-
-${reviewText}`;
+    const prompt = `You are a business analyst. Based solely on the following customer reviews for "${businessName}", write a concise 3-sentence insight summary covering: overall sentiment, what customers love most, and one area for improvement. Be specific and use evidence from the reviews. Do not use bullet points — write in flowing prose.\n\n${reviewText}`;
 
     try {
       const res = await fetch(
@@ -43,9 +41,7 @@ ${reviewText}`;
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-          }),
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
         }
       );
       const data = await res.json();
@@ -62,7 +58,7 @@ ${reviewText}`;
   return { summary, loading, error, generate };
 }
 
-export default function BusinessProfile() {
+export default function NearbyBusinessProfile() {
   const { id } = useParams();
   const business = mockBusinesses.find((b) => b.id === id);
   const { reviews: userReviews } = useReviews();
@@ -102,7 +98,7 @@ export default function BusinessProfile() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-12 space-y-12">
 
-      {/* Business Header */}
+      {/* Header */}
       <div className="grid grid-cols-3 gap-8">
         <div className="col-span-1">
           <img src={business.image} alt={business.name} className="w-full aspect-square object-cover rounded-3xl" />
@@ -114,17 +110,11 @@ export default function BusinessProfile() {
           </div>
           <p className="text-lg text-black/60 mb-6">{business.description}</p>
           <div className="flex items-center gap-6 mb-4">
-            <button
-              onClick={() => {
-                const el = document.getElementById("ai-insights");
-                if (el) window.scrollTo({ top: el.offsetTop - 90, behavior: "smooth" });
-              }}
-              className="flex items-center gap-2 hover:underline"
-            >
+            <div className="flex items-center gap-2">
               <Star className="w-5 h-5 fill-black" />
               <span className="font-semibold">{avgRating}</span>
               <span className="text-black/40">({allReviews.length} reviews)</span>
-            </button>
+            </div>
             {business.verified && (
               <div className="flex items-center gap-2 text-blue-600">
                 <CheckCircle2 className="w-4 h-4" />
@@ -155,22 +145,20 @@ export default function BusinessProfile() {
           ) : (
             <div className="grid grid-cols-4 gap-6">
               {businessProducts.map((product) => (
-                <Link key={product.id} to={`/customer/product/${product.id}`} className="group">
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow rounded-3xl border border-black/5">
-                    <div className="aspect-square overflow-hidden">
-                      <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-bold mb-2 line-clamp-1">{product.name}</h3>
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium">${product.price}</p>
-                        <div className="flex items-center gap-1 text-sm">
-                          <Star className="w-3 h-3 fill-black" />{product.rating}
-                        </div>
+                <Card key={product.id} className="overflow-hidden rounded-3xl border border-black/5">
+                  <div className="aspect-square overflow-hidden">
+                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-bold mb-2 line-clamp-1">{product.name}</h3>
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">${product.price}</p>
+                      <div className="flex items-center gap-1 text-sm">
+                        <Star className="w-3 h-3 fill-black" />{product.rating}
                       </div>
                     </div>
-                  </Card>
-                </Link>
+                  </div>
+                </Card>
               ))}
             </div>
           )}
@@ -181,22 +169,20 @@ export default function BusinessProfile() {
           ) : (
             <div className="grid grid-cols-4 gap-6">
               {businessServices.map((service) => (
-                <Link key={service.id} to={`/customer/service/${service.id}`} className="group">
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow rounded-3xl border border-black/5">
-                    <div className="aspect-square overflow-hidden">
-                      <img src={service.image} alt={service.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-bold mb-2 line-clamp-1">{service.name}</h3>
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium">${service.price}</p>
-                        <div className="flex items-center gap-1 text-sm">
-                          <Star className="w-3 h-3 fill-black" />{service.rating}
-                        </div>
+                <Card key={service.id} className="overflow-hidden rounded-3xl border border-black/5">
+                  <div className="aspect-square overflow-hidden">
+                    <img src={service.image} alt={service.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-bold mb-2 line-clamp-1">{service.name}</h3>
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">${service.price}</p>
+                      <div className="flex items-center gap-1 text-sm">
+                        <Star className="w-3 h-3 fill-black" />{service.rating}
                       </div>
                     </div>
-                  </Card>
-                </Link>
+                  </div>
+                </Card>
               ))}
             </div>
           )}
@@ -204,8 +190,8 @@ export default function BusinessProfile() {
       </Tabs>
 
       {/* AI Insights */}
-      <div id="ai-insights">
-        <div className="flex items-center gap-2 mb-2">
+      <div>
+        <div className="mb-2">
           <p className="text-[10px] uppercase tracking-widest font-bold text-black/40">AI Insights</p>
         </div>
         <Card className="p-8 border border-black/5 rounded-3xl bg-black/5 shadow-sm">
@@ -224,7 +210,6 @@ export default function BusinessProfile() {
                   Generate an AI-powered summary of what customers are saying about this business.
                 </p>
               )}
-
               {loading && (
                 <div className="space-y-2">
                   <div className="h-3 bg-black/10 rounded-full animate-pulse w-full" />
@@ -232,11 +217,9 @@ export default function BusinessProfile() {
                   <div className="h-3 bg-black/10 rounded-full animate-pulse w-4/6" />
                 </div>
               )}
-
               {summary && !loading && (
                 <p className="text-sm text-black/70 leading-relaxed">{summary}</p>
               )}
-
               {error && !loading && (
                 <p className="text-sm text-red-400">{error}</p>
               )}
@@ -247,11 +230,7 @@ export default function BusinessProfile() {
               disabled={loading}
               className="rounded-full bg-gradient-to-r from-violet-500 to-blue-500 text-white hover:opacity-90 shrink-0 flex items-center gap-2"
             >
-              {loading ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <Sparkles className="w-4 h-4" />
-              )}
+              {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
               {summary ? "Regenerate" : "Generate"}
             </Button>
           </div>
@@ -259,7 +238,7 @@ export default function BusinessProfile() {
       </div>
 
       {/* Reviews */}
-      <div id="reviews">
+      <div>
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="text-[10px] uppercase tracking-widest font-bold text-black/40 mb-2">Reviews</p>

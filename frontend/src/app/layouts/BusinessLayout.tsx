@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { Badge } from "../components/ui/badge";
-import { Home, Plus, Package, ShoppingBag, TrendingUp, Bell, User, Settings, HelpCircle, Shield, LogOut } from "lucide-react";
+import { Home, Plus, Package, ShoppingBag, TrendingUp, Bell, User, Settings, HelpCircle, Shield, LogOut, Store } from "lucide-react";
 import { useUser } from "../context/UserContext";
 
 export default function BusinessLayout() {
@@ -65,6 +65,12 @@ export default function BusinessLayout() {
                 <Button variant="ghost" className="rounded-full hover:bg-black/5 transition-all duration-300 gap-2">
                   <TrendingUp className="w-4 h-4" strokeWidth={1.5} />
                   <span className="text-sm">Insights</span>
+                </Button>
+              </Link>
+              <Link to="/business/nearby">
+                <Button variant="ghost" className="rounded-full hover:bg-black/5 transition-all duration-300 gap-2">
+                  <Store className="w-4 h-4" strokeWidth={1.5} />
+                  <span className="text-sm">Explore</span>
                 </Button>
               </Link>
 

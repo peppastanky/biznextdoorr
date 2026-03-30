@@ -110,7 +110,7 @@ export default function TopUpDialog({ open, onClose }: TopUpDialogProps) {
       const pmData = await pmRes.json();
       setPaymentMethods(pmData.paymentMethods || []);
     } catch {
-      toast.error("Could not connect to server. Try PayNow instead.");
+      // Server unreachable — continue with empty payment methods so UI still renders
     } finally {
       setMethodsLoading(false);
     }
@@ -313,15 +313,24 @@ export default function TopUpDialog({ open, onClose }: TopUpDialogProps) {
         )}
 
         {/* Step 3a: Add card */}
-        {step === "add-card" && customerId && (
+        {step === "add-card" && (
           <div className="pt-2">
-            <Elements stripe={stripePromise}>
-              <AddCardForm
-                customerId={customerId}
-                onSaved={() => { loadMethods(); setStep("method"); }}
-                onBack={() => setStep("method")}
-              />
-            </Elements>
+            {customerId ? (
+              <Elements stripe={stripePromise}>
+                <AddCardForm
+                  customerId={customerId}
+                  onSaved={() => { loadMethods(); setStep("method"); }}
+                  onBack={() => setStep("method")}
+                />
+              </Elements>
+            ) : (
+              <div className="space-y-4 text-center py-4">
+                <p className="text-sm text-black/50">Server is currently unavailable. Please try PayNow instead.</p>
+                <button onClick={() => setStep("method")} className="text-sm text-black/40 hover:text-black transition-colors flex items-center justify-center gap-1 mx-auto">
+                  <ChevronLeft className="w-3 h-3" /> Back
+                </button>
+              </div>
+            )}
           </div>
         )}
 

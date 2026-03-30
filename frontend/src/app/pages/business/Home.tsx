@@ -3,10 +3,11 @@ import { Link, useNavigate } from "react-router";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Calendar } from "../../components/ui/calendar";
-import { DollarSign, Users, TrendingUp, Repeat, ArrowRight, Wallet } from "lucide-react";
+import { DollarSign, Users, TrendingUp, Repeat, ArrowRight, Wallet, Store } from "lucide-react";
 import { useUser } from "../../context/UserContext";
 import { format, isSameDay, parseISO } from "date-fns";
 import { motion } from "motion/react";
+import { mockBusinesses } from "../../data/mockData";
 
 export default function BusinessHome() {
   const { user } = useUser();
@@ -41,6 +42,22 @@ export default function BusinessHome() {
       { time: "2:00 PM",  customer: "clara_wu",    phone: "+1234567900", item: "Pedicure Service",type: "service" },
       { time: "4:30 PM",  customer: "david_lee",   phone: "+1234567901", item: "Croissants",      type: "product" },
     ],
+    "2026-03-29": [
+      { time: "9:00 AM",  customer: "jasmine_ng",  phone: "+6591234567", item: "Gel Manicure",     type: "service" },
+      { time: "11:00 AM", customer: "fiona_koh",   phone: "+6591234568", item: "Chocolate Cake",   type: "product" },
+      { time: "3:00 PM",  customer: "rachel_sim",  phone: "+6591234569", item: "Nail Art Design",  type: "service" },
+    ],
+    "2026-03-30": [
+      { time: "10:00 AM", customer: "tiffany_low", phone: "+6591234570", item: "Pedicure Service", type: "service" },
+      { time: "1:00 PM",  customer: "alice_tan",   phone: "+6591234571", item: "Croissants",       type: "product" },
+      { time: "4:00 PM",  customer: "wendy_goh",   phone: "+6591234572", item: "Gel Manicure",     type: "service" },
+      { time: "6:00 PM",  customer: "cheryl_ong",  phone: "+6591234573", item: "Succulent Set",    type: "product" },
+    ],
+    "2026-03-31": [
+      { time: "9:30 AM",  customer: "steph_lim",   phone: "+6591234574", item: "Nail Art Design",  type: "service" },
+      { time: "12:00 PM", customer: "bel_ho",      phone: "+6591234575", item: "Chocolate Cake",   type: "product" },
+      { time: "2:30 PM",  customer: "donna_koh",   phone: "+6591234576", item: "Gel Manicure",     type: "service" },
+    ],
   };
 
   const scheduledDates = Object.keys(allSchedule).map(d => parseISO(d));
@@ -62,7 +79,7 @@ export default function BusinessHome() {
             mode="single"
             selected={selectedDate}
             onSelect={(date) => date && setSelectedDate(date)}
-            className="rounded-xl"
+            className="rounded-xl mx-auto [&>div]:mx-auto"
             modifiers={{ scheduled: scheduledDates }}
             components={{
               DayContent: ({ date }) => {
@@ -265,6 +282,50 @@ export default function BusinessHome() {
             </Link>
           </div>
         </Card>
+      </div>
+
+      {/* Explore Nearby Businesses */}
+      <div className="mb-24">
+        <div className="flex items-center justify-between mb-12">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest font-bold text-black/40 mb-2">See what other businesses are posting</p>
+            <h2 className="text-4xl font-bold tracking-tighter leading-tight">Explore</h2>
+          </div>
+          <Link to="/business/nearby">
+            <Button variant="ghost" className="rounded-full hover:bg-black/5 gap-2 transition-all duration-300">
+              View All <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+            </Button>
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {mockBusinesses.map((business, i) => (
+            <motion.div
+              key={business.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.08 }}
+            >
+              <Link to={`/business/nearby/${business.id}`} className="group block">
+                <Card className="overflow-hidden border border-black/5 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300">
+                  <div className="aspect-video overflow-hidden">
+                    <img
+                      src={business.image}
+                      alt={business.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="p-5">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <h3 className="font-bold line-clamp-1">{business.name}</h3>
+                    </div>
+                    <p className="text-xs text-black/40 line-clamp-2 leading-relaxed">{business.description}</p>
+                  </div>
+                </Card>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
       </div>
 
       {/* Recent Activity */}
