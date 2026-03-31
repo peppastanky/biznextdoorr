@@ -45,7 +45,7 @@ function BusinessPin({
     <div
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
-      style={{ transform: "translate(-50%, -100%)", cursor: "pointer", position: "relative" }}
+      style={{ transform: "translate(-50%, -100%)", cursor: "pointer", position: "relative", zIndex: hovered ? 9999 : 1 }}
     >
       {/* Tooltip */}
       {hovered && (
@@ -232,21 +232,23 @@ export default function BusinessMap({
         </OverlayView>
       )}
 
-      {businesses.map((business) => (
-        <OverlayView
-          key={business.id}
-          position={business.location}
-          mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
-        >
-          <BusinessPin
-            business={business}
-            hovered={hoveredId === business.id}
-            onHover={() => setHoveredId(business.id)}
-            onLeave={() => setHoveredId(null)}
-            basePath={basePath}
-          />
-        </OverlayView>
-      ))}
+      {[...businesses]
+        .sort((a, b) => (a.id === hoveredId ? 1 : b.id === hoveredId ? -1 : 0))
+        .map((business) => (
+          <OverlayView
+            key={business.id}
+            position={business.location}
+            mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+          >
+            <BusinessPin
+              business={business}
+              hovered={hoveredId === business.id}
+              onHover={() => setHoveredId(business.id)}
+              onLeave={() => setHoveredId(null)}
+              basePath={basePath}
+            />
+          </OverlayView>
+        ))}
     </GoogleMap>
   );
 }

@@ -5,12 +5,11 @@ import { Link, useNavigate } from "react-router";
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Calendar as CalendarUI } from "../../components/ui/calendar";
-import { Wallet, Package, Calendar, ArrowRight, Star, CheckCircle, Sparkles, MapPin } from "lucide-react";
+import { Wallet, Package, Calendar, ArrowRight, Star, CheckCircle, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { useUser } from "../../context/UserContext";
 import { useReviews } from "../../context/ReviewContext";
 import { mockProducts, mockServices, mockBusinesses } from "../../data/mockData";
-import { getNearbyItems } from "../../lib/geoLocation";
 import { motion } from "motion/react";
 import { format, isSameDay, parseISO } from "date-fns";
 
@@ -63,49 +62,13 @@ export default function CustomerHome() {
     }, 1500);
   }
 
-  // Get nearby businesses based on user location
-  let recommended: (typeof mockProducts | typeof mockServices)[number][] = [];
-  let nearbyBusinesses: (typeof mockBusinesses)[number][] = mockBusinesses;
-
-  if (user?.location) {
-    // Get nearby products and services
-    const nearbyProducts = getNearbyItems(
-      mockProducts.map((p) => ({
-        ...p,
-        location: mockBusinesses.find((b) => b.id === p.businessId)?.location,
-      })) as any[],
-      user.location.lat,
-      user.location.lng,
-      5,
-      4
-    );
-
-    const nearbyServices = getNearbyItems(
-      mockServices.map((s) => ({
-        ...s,
-        location: mockBusinesses.find((b) => b.id === s.businessId)?.location,
-      })) as any[],
-      user.location.lat,
-      user.location.lng,
-      5,
-      4
-    );
-
-    recommended = [...nearbyProducts, ...nearbyServices].slice(0, 4);
-
-    // Get nearby businesses for the "Businesses Near You" section
-    nearbyBusinesses = getNearbyItems(
-      mockBusinesses,
-      user.location.lat,
-      user.location.lng,
-      5,
-      4
-    ).map(({ distance, ...b }) => b);
-  } else {
-    // Fallback if user location is not available
-    recommended = [...mockProducts.slice(0, 3), ...mockServices.slice(0, 2)];
-    nearbyBusinesses = mockBusinesses.slice(0, 4);
-  }
+  // Always show b1–b4 products/services and businesses
+  const featuredBusinessIds = ["b1", "b2", "b3", "b4"];
+  const recommended = [
+    ...mockProducts.filter((p) => featuredBusinessIds.includes(p.businessId)).slice(0, 3),
+    ...mockServices.filter((s) => featuredBusinessIds.includes(s.businessId)).slice(0, 2),
+  ];
+  const nearbyBusinesses = mockBusinesses.filter((b) => featuredBusinessIds.includes(b.id));
 
   const dayItems = scheduleItems.filter(item => isSameDay(parseISO(item.date), selectedDate));
 

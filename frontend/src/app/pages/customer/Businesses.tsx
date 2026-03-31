@@ -2,25 +2,10 @@ import { Link } from "react-router";
 import { Card } from "../../components/ui/card";
 import { Star, MapPin } from "lucide-react";
 import { mockBusinesses } from "../../data/mockData";
-import { getNearbyItems } from "../../lib/geoLocation";
-import { useUser } from "../../context/UserContext";
 import { motion } from "motion/react";
 
 export default function Businesses() {
-  const { user } = useUser();
-
-  // Get only 4 businesses - filtered by location if available, otherwise first 4
-  let displayedBusinesses = mockBusinesses.slice(0, 4);
-
-  if (user?.location) {
-    displayedBusinesses = getNearbyItems(
-      mockBusinesses,
-      user.location.lat,
-      user.location.lng,
-      5,
-      4
-    ).map(({ distance, ...b }) => b);
-  }
+  const displayedBusinesses = mockBusinesses;
   return (
     <div className="max-w-7xl mx-auto px-6 py-24">
       <div className="mb-12">
@@ -64,7 +49,7 @@ export default function Businesses() {
                   </div>
                   <div className="mt-4 pt-4 border-t border-black/5">
                     <span className="text-xs uppercase tracking-widest font-bold text-black/40">
-                      {business.category}
+                      {business.reviews} reviews
                     </span>
                   </div>
                 </div>
